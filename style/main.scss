@@ -1,0 +1,31 @@
+body {
+  margin-top: 6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+h1, h2 {
+  min-width: 20rem;
+  font-size: x-large;
+}
+
+h1.error {
+  color: red
+}
+
+a {
+  font-size: large;
+  display: block;
+  // margin: 1rem;
+}
+html {
+  background-color: rgb(235, 235, 235);
+}
+@media (prefers-color-scheme: dark) {
+  html {
+    background-color: rgb(25, 25, 25);
+    color: rgb(220, 220, 220);
+  }
+}
