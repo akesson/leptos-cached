@@ -68,7 +68,7 @@ pub fn TimeZone(cx: Scope, key: WorldTimeParams) -> Element {
 }
 
 #[allow(dead_code)]
-async fn cache_or_fetch(key: WorldTimeParams, value: WriteSignal<Option<String>>) {
+async fn cache_or_fetch(key: WorldTimeParams, value: WriteSignal<String>) {
     let storage = match window().local_storage() {
         Ok(Some(s)) => s,
         _ => {
@@ -77,15 +77,15 @@ async fn cache_or_fetch(key: WorldTimeParams, value: WriteSignal<Option<String>>
     };
     let key_json = serde_json::to_string(&key).unwrap();
     if let Ok(Some(val)) = storage.get(&key_json) {
-        value.set(Some(format!("[cache] {val}")));
+        value.set(format!("[cache] {val}"));
     } else {
-        value.set(Some("fetching...".to_string()));
+        value.set("fetching...".to_string());
         let res = match WorldTime::fetch(&key).await {
             Ok(wt) => wt.to_string(),
             Err(e) => return log!("Error {e}"),
         };
 
         storage.set(&key_json, &res).unwrap();
-        value.set(Some(format!("[fetch] {res}")));
+        value.set(format!("[fetch] {res}"));
     }
 }
