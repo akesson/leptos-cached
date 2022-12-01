@@ -64,7 +64,7 @@ pub fn TimeZone(cx: Scope, key: WorldTimeParams) -> Element {
         cache_or_fetch(key, value).await
     });
 
-    view! { cx, <h2>{move || world_time.get().unwrap_or("...".to_string())}</h2> }
+    view! { cx, <h2>{move || world_time.get()}</h2> }
 }
 
 #[allow(dead_code)]
