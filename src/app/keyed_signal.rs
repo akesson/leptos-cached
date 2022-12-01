@@ -44,19 +44,15 @@ pub fn create_keyed_signal<Key, Val, F, Fu>(
 where
     Key: 'static + PartialEq + Clone + Debug,
     Val: 'static,
-    F: Fn(Key) -> Fu + 'static,
-    Fu: Future<Output = Val> + 'static,
+    F: Fn(Key, WriteSignal<Option<Val>>) -> Fu + 'static,
+    Fu: Future<Output = ()> + 'static,
 {
     let (value, inner) = create_key_signal_inner(cx, key, lookup);
     let act = inner.action_fn.clone();
-    let set_val = inner.set_value;
     create_effect(cx, move |_| {
         let key = inner.key.get().clone();
-        let fut = (act)(key);
-        spawn_local(async move {
-            let new_value = fut.await;
-            set_val.set(Some(new_value));
-        })
+        let fut = (act)(key, inner.set_value);
+        spawn_local(async move { fut.await })
     });
     KeyedSignal { inner, value }
 }
@@ -69,7 +65,7 @@ where
     key: Memo<Key>,
     set_value: WriteSignal<Option<Val>>,
 
-    action_fn: Rc<dyn Fn(Key) -> Pin<Box<dyn Future<Output = Val>>>>,
+    action_fn: Rc<dyn Fn(Key, WriteSignal<Option<Val>>) -> Pin<Box<dyn Future<Output = ()>>>>,
 }
 
 fn create_key_signal_inner<Key, Val, F, Fu>(
@@ -80,16 +76,16 @@ fn create_key_signal_inner<Key, Val, F, Fu>(
 where
     Key: 'static + PartialEq + Clone + Debug,
     Val: 'static,
-    F: Fn(Key) -> Fu + 'static,
-    Fu: Future<Output = Val> + 'static,
+    F: Fn(Key, WriteSignal<Option<Val>>) -> Fu + 'static,
+    Fu: Future<Output = ()> + 'static,
 {
     let key = create_memo(cx, move |_| key());
     let (value, set_value) = create_signal(cx, None);
 
-    let action_fn = Rc::new(move |input: Key| {
+    let action_fn = Rc::new(move |input: Key, value: WriteSignal<Option<Val>>| {
         let input = input.clone();
-        let fut = lookup(input);
-        Box::pin(async move { fut.await }) as Pin<Box<dyn Future<Output = Val>>>
+        let fut = lookup(input, value);
+        Box::pin(async move { fut.await }) as Pin<Box<dyn Future<Output = ()>>>
     });
 
     (

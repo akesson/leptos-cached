@@ -59,27 +59,32 @@ pub fn TimeZone(cx: Scope, key: WorldTimeParams) -> Element {
     create_effect(cx, move |_| key.set(WorldTimeParams::new(params)));
 
     // Will be updated if the key changed.
-    let world_time = create_keyed_signal(cx, key, |key| async move { cache_or_fetch(key).await });
+    let world_time = create_keyed_signal(cx, key, |key, value| async move {
+        cache_or_fetch(key, value).await
+    });
 
     view! { cx, <h2>{move || world_time.get().unwrap_or("...".to_string())}</h2> }
 }
 
 #[allow(dead_code)]
-async fn cache_or_fetch(key: WorldTimeParams) -> String {
+async fn cache_or_fetch(key: WorldTimeParams, value: WriteSignal<Option<String>>) {
     let storage = match window().local_storage() {
         Ok(Some(s)) => s,
-        _ => return "No storage found".to_string(),
+        _ => {
+            return log!("No storage found");
+        }
     };
     let key_json = serde_json::to_string(&key).unwrap();
     if let Ok(Some(val)) = storage.get(&key_json) {
-        return format!("[cache] {val}");
+        value.set(Some(format!("[cache] {val}")));
     } else {
+        value.set(Some("fetching...".to_string()));
         let res = match WorldTime::fetch(&key).await {
             Ok(wt) => wt.to_string(),
-            Err(e) => return format!("Error {e}"),
+            Err(e) => return log!("Error {e}"),
         };
 
         storage.set(&key_json, &res).unwrap();
-        format!("[fetch] {res}")
+        value.set(Some(format!("[fetch] {res}")));
     }
 }
