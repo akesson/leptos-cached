@@ -23,7 +23,8 @@ pub fn App(cx: Scope) -> Element {
         cx,
         <div>
             <Router>
-              <h1>"UTC offset for Timezone!"</h1>
+              <h1>"UTC offset for a Timezone"</h1>
+              <div>"Try alternating between the two links to see how values are fetched or retrieved from the cache and clear the cache manually with the button."</div>
               <A href="/America/Bogota">"America/Bogota"</A>
               <A href="/Europe/London">"Europe/London"</A>
               <Content />
