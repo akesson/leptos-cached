@@ -58,13 +58,14 @@ pub fn TimeZone(cx: Scope, key: WorldTimeParams) -> Element {
     let params = use_params_map(cx);
     create_effect(cx, move |_| key.set(WorldTimeParams::new(params)));
 
-    let cached = create_keyed_signal(cx, key, |key| async move { do_load(key).await });
+    // Will be updated if the key changed.
+    let world_time = create_keyed_signal(cx, key, |key| async move { cache_or_fetch(key).await });
 
-    view! { cx, <h2>{move || cached.get().unwrap_or("...".to_string())}</h2> }
+    view! { cx, <h2>{move || world_time.get().unwrap_or("...".to_string())}</h2> }
 }
 
 #[allow(dead_code)]
-async fn do_load(key: WorldTimeParams) -> String {
+async fn cache_or_fetch(key: WorldTimeParams) -> String {
     let storage = match window().local_storage() {
         Ok(Some(s)) => s,
         _ => return "No storage found".to_string(),
